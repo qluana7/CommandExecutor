@@ -1,9 +1,9 @@
 using System;
 using System.Reflection;
 
-namespace CommandExecutor
+namespace CommandExecutor.Converters.BasicConverters
 {
-    public class EnumConverter<T> : IConverter<T> where T : struct, IComparable, IConvertible, IFormattable
+    internal class EnumConverter<T> : IConverter<T> where T : struct, IComparable, IConvertible, IFormattable
     {
         public T Convert(string value)
         {

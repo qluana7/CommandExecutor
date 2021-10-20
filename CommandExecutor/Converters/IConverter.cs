@@ -1,6 +1,6 @@
 using System;
 
-namespace CommandExecutor
+namespace CommandExecutor.Converters
 {
     public interface IConverter
     { }
