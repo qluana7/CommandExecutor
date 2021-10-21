@@ -64,5 +64,5 @@ Then, it execute 'Hello' method with arguments "World"
 Framework version : Standard 2.1 / .NET 5.0
 
 ### Reference
-**Referred to the source of the following repo**
+**Referred the source of the following repo**
 - [DSharpPlus.CommandsNext](https://github.com/DSharpPlus/DSharpPlus/tree/master/DSharpPlus.CommandsNext)
