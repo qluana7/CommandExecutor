@@ -36,7 +36,7 @@ namespace CommandExecutor.Converters
             var t = typeof(T);
             if (!Converters.Keys.Contains(t))
                 throw new InvalidCastException("There is no converter for given type.");
-            else if (Converters[t] is not IConverter<T>)
+            else if (!(Converters[t] is IConverter<T>))
                 throw new InvalidOperationException("Invalid converter for given type");
             else
                 return (Converters[t] as IConverter<T>).Convert(value);

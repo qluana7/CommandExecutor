@@ -36,7 +36,7 @@ namespace CommandExecutor
         
         internal ExecutorOptions ToOptions()
         {
-            string[] names = Enum.GetNames<ExecutorOptions>();
+            string[] names = Enum.GetNames(typeof(ExecutorOptions));
             PropertyInfo[] infos = this.GetType()
                                         .GetProperties(BindingFlags.Public | BindingFlags.Instance)
                                         .Where(l => l.PropertyType == typeof(bool))

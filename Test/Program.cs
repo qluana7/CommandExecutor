@@ -8,20 +8,29 @@ namespace Test
 {
     class Program
     {
-        static void Main(string[] _)
+        public Executor Executor { get; private set; }
+        
+        static void Main()
         {
-            Executor executor = new(new ExecutorConfiguration() {
+            var prog = new Program();
+            prog.Run();
+        }
+        
+        void Run()
+        {
+            Executor = new(new ExecutorConfiguration() {
                 IgnoreCase = true,
-                GetPrivateMethod = true
+                IgnoreExtraArguments = false,
+                GetPrivateMethod = false
             });
             
-            executor.RegisterCommands<Commands>();
+            Executor.RegisterCommands<Commands>();
             
-            executor.Execute("ping hello true");
-            executor.Execute("args 3 5 2 asdf");
-            executor.Execute("inf inf this is inf arg test");
-            executor.Execute("nonparam");
-            executor.Execute("private");
+            Executor.Execute("ping hello true");
+            Executor.Execute("args 3 5 2 asdf");
+            Executor.Execute("inf inf this is inf arg test");
+            Executor.Execute("nonparam");
+            Executor.Execute("private");
         }
     }
     
