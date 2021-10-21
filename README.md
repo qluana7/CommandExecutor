@@ -62,3 +62,7 @@ Then, it execute 'Hello' method with arguments "World"
 
 ### Compile Information
 Framework version : Standard 2.1 / .NET 5.0
+
+### Reference
+**Referred to the source of the following repo**
+- [DSharpPlus.CommandsNext](https://github.com/DSharpPlus/DSharpPlus/tree/master/DSharpPlus.CommandsNext)
