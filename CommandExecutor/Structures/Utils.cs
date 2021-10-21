@@ -5,9 +5,9 @@ using System.Linq;
 
 namespace CommandExecutor.Structures
 {
-    public static class Utils
+    internal static class Utils
     {
-        public static object CastArray(IEnumerable<object> obj, Type t)
+        internal static object CastArray(IEnumerable<object> obj, Type t)
         {
             MethodInfo cast = typeof(Enumerable).GetMethod("Cast", BindingFlags.Static | BindingFlags.Public).MakeGenericMethod(t);
             MethodInfo toarray = typeof(Enumerable).GetMethod("ToArray", BindingFlags.Static | BindingFlags.Public).MakeGenericMethod(t);

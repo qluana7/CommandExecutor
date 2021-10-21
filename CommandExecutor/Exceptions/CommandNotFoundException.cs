@@ -13,6 +13,6 @@ namespace CommandExecutor.Exceptions
         public CommandRequest Request { get; set; }
         
         private static string GetExceptionMessage(CommandRequest req)
-            => $"Cannot found method name : {req.Command}. Check case sensitive if IgnoreCase options set false.";
+            => $"Cannot found method name : {req.Command}. Check options if some options set false.";
     }
 }

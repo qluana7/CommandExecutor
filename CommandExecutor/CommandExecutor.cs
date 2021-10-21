@@ -10,25 +10,88 @@ using CommandExecutor.Structures;
 
 namespace CommandExecutor
 {
+    /// <summary>
+    /// The class that provides
+    /// regisetering commands with <see cref="RegisterCommands{T}"/>
+    /// and executing commands with <see cref="Execute(string)"/>.
+    /// Set commands execute options with <see cref="Configuration"/>
+    /// </summary>
     public class Executor
     {
-        public Executor(ExecutorConfiguration configuration)
+        /// <summary>
+        /// Initialize <see cref="Executor"/> object
+        /// </summary>
+        public Executor()
         {
             this._commands = new List<ICommandModule>();
+            this.Configuration = new ExecutorConfiguration();
+        }
+        
+        /// <summary>
+        /// Initialize <see cref="Executor"/> object with <see cref="ExecutorConfiguration"/>
+        /// </summary>
+        public Executor(ExecutorConfiguration configuration): this()
+        {
             this.Configuration = configuration;
         }
         
         private readonly List<ICommandModule> _commands;
         
+        /// <summary>
+        /// Enum flags object
+        /// </summary>
         internal ExecutorOptions Options => this.Configuration.ToOptions();
         
-        public ExecutorConfiguration Configuration { private get; set; }
+        /// <summary>
+        /// Can modify configuration with this
+        /// </summary>
+        public ExecutorConfiguration Configuration { get; set; }
         
+        /// <summary>
+        /// Get commands that registered in this executor
+        /// </summary>
         public ICommandModule[] Commands => _commands.ToArray();
         
-        public void RegisterCommands<T>() where T : ICommandModule, new()
-            => this._commands.Add(new T());
+        private const BindingFlags FLAGS = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.Instance;
         
+        /// <summary>
+        /// Register commands.
+        /// The class to register must inherit <see cref="ICommandModule"/>.
+        /// This register all public methods (if <see cref="ExecutorConfiguration.GetPrivateMethod"/> set true, include private methods)
+        /// which has <see cref="CommandAttribute"/>.
+        /// Overload methods are not support yet. Command's name and alias must be unique.
+        /// </summary>
+        /// <typeparam name="T">The class to register. It must inherit <see cref="ICommandModule"/></typeparam>
+        /// <exception cref="RegisterException"/>
+        public void RegisterCommands<T>() where T : ICommandModule, new()
+        {
+            IEnumerable<string> regcmd = this._commands
+                .Select(l => l
+                            .GetType()
+                            .GetMethods(FLAGS)
+                            .Select(l => l.GetCustomAttribute<CommandAttribute>())
+                            .SelectMany(l => new string[] { l.Name }.Concat(l.Alias)))
+                .SelectMany(l => l);
+            
+            IEnumerable<string> cmd = typeof(T)
+                                        .GetMethods(FLAGS)
+                                        .Select(l => (l, l.GetCustomAttribute<CommandAttribute>()))
+                                        .Where(l => l.Item2 != null)
+                                        .SelectMany(l => new string[] { l.Item2.Name ?? l.l.Name }.Concat(l.Item2.Alias ?? Array.Empty<string>()));
+            
+            if (cmd.Count() != cmd.Distinct().Count())
+                throw new RegisterException(typeof(T), "Methods with duplicate names cannot be registered.");
+            
+            if (regcmd.Any(l => cmd.Contains(l)))
+                throw new RegisterException(typeof(T), "Methods with duplicate names cannot be registered.");
+            this._commands.Add(new T());
+        }
+        
+        /// <summary>
+        /// Unregister commands.
+        /// </summary>
+        /// <exception cref="NullReferenceException"/>
+        /// <typeparam name="T">The class to unregister. It must inherit <see cref="ICommandModule"/></typeparam>
         public void UnregisterCommands<T>() where T : ICommandModule, new()
         {
             ICommandModule mod = this._commands.FirstOrDefault(l => l is T);
@@ -36,28 +99,61 @@ namespace CommandExecutor
             this._commands.Remove(mod);
         }
         
+        /// <summary>
+        /// Execute commands with string.
+        /// <paramref name="content"/> will split with space.
+        /// Then, run <see cref="Execute(string, string[])"/>.
+        /// First argument will be first index of splited content
+        /// And Second argument will be remaining string of splited content
+        /// </summary>
+        /// <param name="content">The string to execute</param>
         public void Execute(string content)
         {
             string[] c = content.Split(' ');
             Execute(c[0], c.Skip(1).ToArray());
         }
         
-        internal void Execute(string command, string[] args)
+        /// <summary>
+        /// Execute commands with commands and arguments.
+        /// This will find command with <paramref name="command"/>,
+        /// and run command with <paramref name="args"/>
+        /// </summary>
+        /// <param name="command">The string to search command</param>
+        /// <param name="args">The string to pass as arguments</param>
+        public void Execute(string command, string[] args)
+        {
+            var (method, module, param) = FindCommand(command, args);
+            method.Invoke(module, param);
+        }
+        
+        internal (MethodInfo Method, ICommandModule Module, object[] Parameters) FindCommand(string command, string[] args)
         {
             MethodInfo method = null;
             ICommandModule module = null;
             
             for (int i = 0; i < this._commands.Count; i++)
             {
-                MethodInfo info = _commands[i].GetType().GetMethods(BindingFlags.Instance | BindingFlags.Public | (Options.HasFlag(ExecutorOptions.GetPrivateMethod) ? BindingFlags.NonPublic : 0))
-                    .FirstOrDefault(l => Options.HasFlag(ExecutorOptions.IgnoreCase) ?
-                                (l.Name.ToLower() == command.ToLower()) :
-                                (l.Name == command));
+                bool igncase = this.Options.HasFlag(ExecutorOptions.IgnoreCase);
+                
+                IEnumerable<MethodInfo> infos = this._commands[i]
+                            .GetType().GetMethods(FLAGS)
+                            .Where(l => l.GetCustomAttributes().FirstOrDefault(l => l is CommandAttribute) != null);
+                
+                MethodInfo info = infos
+                                    .FirstOrDefault(l => {
+                                        CommandAttribute cmdat = l.GetCustomAttribute<CommandAttribute>();
+                                        if (!this.Options.HasFlag(ExecutorOptions.GetPrivateMethod) && cmdat.IsPrivate)
+                                            return false;
+                                        
+                                        return new string[] { cmdat.Name ?? l.Name }.Concat(cmdat.Alias ?? Array.Empty<string>())
+                                                    .Select(l => igncase ? l.ToLower() : l)
+                                                    .Contains(igncase ? command.ToLower() : command);
+                                    });
                                 
                 if (info == null) continue;
                 
                 method = info;
-                module = _commands[i];
+                module = this._commands[i];
                 
                 break;
             }
@@ -71,7 +167,7 @@ namespace CommandExecutor
             
             object[] paras = ConvertParameter(method, args);
             
-            method.Invoke(module, paras.Any() ? paras.ToArray() : null);
+            return (method, module, paras.Any() ? paras.ToArray() : null);
         }
         
         private object[] ConvertParameter(MethodInfo method, string[] args)
