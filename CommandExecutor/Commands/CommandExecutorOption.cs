@@ -1,11 +1,12 @@
 using System;
 using System.Linq;
 using System.Reflection;
+using CommandExecutor.Attributes;
 
 namespace CommandExecutor
 {
     [Flags]
-    public enum ExecutorOptions
+    internal enum ExecutorOptions
     {
         None = 0,
         IgnoreCase = 1 << 0,
@@ -13,12 +14,24 @@ namespace CommandExecutor
         GetPrivateMethod = 1 << 2
     }
     
+    /// <summary>
+    /// The class that can configure executor.
+    /// </summary>
     public class ExecutorConfiguration
     {
+        /// <summary>
+        /// If this set to true, ignore case sensitive when find command.
+        /// </summary>
         public bool IgnoreCase { get; set; } = false;
         
+        /// <summary>
+        /// If this set to true, ignore extra arguments when execute command.
+        /// </summary>
         public bool IgnoreExtraArguments { get; set; } = false;
         
+        /// <summary>
+        /// If this set to true, find command method allow to get method with <see cref="CommandAttribute"/>'s <see cref="CommandAttribute.IsPrivate"/> set to true
+        /// </summary>
         public bool GetPrivateMethod { get; set; } = false;
         
         internal ExecutorOptions ToOptions()

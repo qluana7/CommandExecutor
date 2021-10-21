@@ -6,7 +6,7 @@ using CommandExecutor.Converters.BasicConverters;
 
 namespace CommandExecutor.Converters
 {
-    public class ArgumentsConverter
+    internal class ArgumentsConverter
     {
         public Dictionary<Type, IConverter> Converters { get; }
 
