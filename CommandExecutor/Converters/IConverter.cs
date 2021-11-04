@@ -15,6 +15,10 @@ namespace CommandExecutor.Converters
     /// <typeparam name="T">The generic type for convert</typeparam>
     public interface IConverter<T> : IConverter
     {
+        /// <summary>
+        /// Convert string to specific type
+        /// </summary>
+        /// <param name="value">The string value</param>
         T Convert(string value);
     }
 }
