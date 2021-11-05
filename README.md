@@ -7,7 +7,7 @@
 - Provides set arguments count for array.
 
 ### Example
-First, declare executor object.
+First, declare executor class.
 ```cs
 // in Main method
 
@@ -18,7 +18,7 @@ Executor executor = new(new ExecutorConfiguration() {
 });
 ```
 
-Second, create class that inherit ICommandModule.
+Second, create class that inheriting ICommandModule.
 ```cs
 // outisde of Main class
 
@@ -51,10 +51,16 @@ Then, it execute 'Hello' method with arguments "World"
 
 [See Example Code](/Test/Program.cs)
 
-### New Features
-- [ ] Execute with string and object[] for arguments
-- [ ] Support override method
-- [ ] Checking attribute whether execute with custom attribute
+### Current Staute of New Features
+- [X] Execute with string and object[] for arguments
+  - [X] Add Command class that has information of command and can execute.
+  - [X] Add FindCommand method which returns Command class
+- [X] Checking attribute whether execute with custom attribute
+  - [X] Class execute checking system (virautl method)
+  - [X] Make execute check attribute
+
+
+- [ ] Support override method   // Postpone to next version
 
 ### Contact
 - Discord : 단비#1004
