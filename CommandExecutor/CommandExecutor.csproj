@@ -7,7 +7,7 @@
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <DocumentationFile>bin\CommandExecutor.xml</DocumentationFile>
     <!--Assembly Info-->
-    <Version>1.0.0</Version>
+    <Version>1.1.0</Version>
     <Authors>Lukince</Authors>
     <Company>Lukince</Company>
     <Product>CommandExecutor</Product>
@@ -19,7 +19,7 @@
   <PropertyGroup Condition="'${Configuration}'=='Release'">
     <Optimize>true</Optimize>
     <OutputPath>bin\Release</OutputPath>
-    <GetneratePackageOnBuild>true</GetneratePackageOnBuild>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
   </PropertyGroup>
   
   <PropertyGroup Condition="'${Configuration}'=='Debug'">
