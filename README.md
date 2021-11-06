@@ -52,15 +52,9 @@ Then, it execute 'Hello' method with arguments "World"
 [See Example Code](/Test/Program.cs)
 
 ### Current Staute of New Features
-- [X] Execute with string and object[] for arguments
-  - [X] Add Command class that has information of command and can execute.
-  - [X] Add FindCommand method which returns Command class
-- [X] Checking attribute whether execute with custom attribute
-  - [X] Class execute checking system (virautl method)
-  - [X] Make execute check attribute
-
-
-- [ ] Support override method   // Postpone to next version
+- [ ] Support SubCommand (or GroupCommand)
+- [ ] Add GetAllCommands method and GetCommands<T> method
+- [ ] Support override method
 
 ### Contact
 - Discord : 단비#1004
