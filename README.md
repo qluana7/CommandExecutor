@@ -1,7 +1,7 @@
 # CommandExecutor
 
 ### Feature
-- Executor register all method that inherit ICommandModule.
+- Executor register all method that inherit CommandModule.
 - Can execute commands with only string.
 - String will automatically change to parameter type.
 - Provides set arguments count for array.
@@ -18,11 +18,11 @@ Executor executor = new(new ExecutorConfiguration() {
 });
 ```
 
-Second, create class that inheriting ICommandModule.
+Second, create class that inheriting CommandModule.
 ```cs
 // outisde of Main class
 
-public class BasicCommand : ICommandModule
+public class BasicCommand : CommandModule
 {
     // You can set command name and alias.
     [Command]
