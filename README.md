@@ -54,6 +54,8 @@ Then, it execute 'Hello' method with arguments "World"
 ### Current Staute of New Features
 - [ ] Support SubCommand (or GroupCommand)
 - [ ] Add GetAllCommands method and GetCommands<T> method
+  - [ ] Providing registered commands array
+  - [ ] Add "TryFindCommand" method
 - [ ] Support override method
 
 ### Contact
