@@ -33,7 +33,7 @@ namespace Test
                 IgnoreCase = true,
                 IgnoreExtraArguments = false,
                 GetPrivateMethod = true,
-                IncludeStaticMethod = false
+                IncludeStaticMethod = true
             });
             
             Executor.RegisterCommands<ScopeCommands>();
@@ -44,6 +44,9 @@ namespace Test
             Executor.RegisterCommands<SpecialCommands>();
             
             Executor.Execute("ping hello true");
+            
+            //Executor.Execute("ping");
+            
             Executor.Execute("args 3 5 2 asdf");
             Executor.Execute("inf inf this is inf arg test");
             Executor.Execute("nonparam");

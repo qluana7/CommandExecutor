@@ -54,6 +54,20 @@ namespace CommandExecutor.Structures
         /// </summary>
         public IEnumerable<Attribute> CustomAttributes => _command.GetCustomAttributes();
         
+        /// <summary>
+        /// The converted objects.
+        /// </summary>
+        /// <value></value>
+        public object[] Arguments { get; private set; } = null;
+        
+        /// <summary>
+        /// The raw string passed.
+        /// </summary>
+        /// <value></value>
+        public string RawArguments { get; private set; } = null;
+        
+        private bool isExeuting;
+        
         private readonly MethodInfo _command;
         
         private readonly CommandAttribute _attribute;
@@ -68,6 +82,10 @@ namespace CommandExecutor.Structures
         /// <param name="param">The object array that is command parameters</param>
         public void Execute(object[] param)
         {
+            if (isExeuting) throw new ExecuteException("You can't execute again while checking command.");
+            
+            isExeuting = true;
+            
             if (ModuleClass.CheckExecute(this) == false) throw new CommandCheckFailException(this, $"CheckExecute returns false in {ModuleClass.GetType().Name}");
             
             ModuleClass.BeforeExecute();
@@ -79,13 +97,20 @@ namespace CommandExecutor.Structures
             _command.Invoke(ModuleClass, param);
             
             ModuleClass.AfterExecute();
+            
+            isExeuting = false;
         }
         
         /// <summary>
         /// Run command with string which will convert as parameter type array
         /// </summary>
         /// <param name="param">The string for method parameter. parameter will split with space.</param>
-        public void Execute(string param) =>
-            Execute(Client.ConvertParameter(_command, param?.Split(' ')));
+        public void Execute(string param)
+        {
+            RawArguments = param;
+            object[] arg = Client.ConvertParameter(_command, param?.Split(' '));
+            Arguments = arg;
+            Execute(arg);
+        }
     }
 }

@@ -124,7 +124,9 @@ namespace CommandExecutor
         /// </summary>
         /// <param name="command">The string to search command</param>
         /// <param name="args">The object array to pass as arguments</param>
-        public void Execute(string command, object[] args) =>
+        
+        // Because of it's risk, We decided to change to internal.
+        internal void Execute(string command, object[] args) =>
             FindCommand(command).Execute(args);
         
         /// <summary>
@@ -135,13 +137,13 @@ namespace CommandExecutor
         /// <returns>The class that has information of command</returns>
         public Command FindCommand(string cmd)
         {
-            (MethodInfo method, CommandModule module, var _) = FindCommand(cmd, null);
+            (MethodInfo method, CommandModule module) = FindCommand(cmd, null);
             
             Executor client = this;
             return new Command(ref client, module, method);
         }
         
-        internal (MethodInfo Method, CommandModule Module, object[] Parameters) FindCommand(string command, string[] args)
+        internal (MethodInfo Method, CommandModule Module) FindCommand(string command, string _)
         {
             MethodInfo method = null;
             CommandModule module = null;
@@ -174,20 +176,14 @@ namespace CommandExecutor
             }
             
             if (method == null || module == null)
-                throw new CommandNotFoundException(new CommandRequest()
-                {
-                    Command = command,
-                    Arguments = args
-                });
+                throw new CommandNotFoundException(command);
             
-            object[] paras = ConvertParameter(method, args);
-            
-            return (method, module, paras.Any() ? paras.ToArray() : null);
+            return (method, module);
         }
         
         internal object[] ConvertParameter(MethodInfo method, string[] args)
         {
-            if (args == null) return Array.Empty<object>();
+            if (args == null) args = Array.Empty<string>();
             
             ParameterInfo[] paras = method.GetParameters();
                         
