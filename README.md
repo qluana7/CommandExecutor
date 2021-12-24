@@ -52,11 +52,13 @@ Then, it execute 'Hello' method with arguments "World"
 [See Example Code](/Test/Program.cs)
 
 ### Current Staute of New Features
-- [ ] Support SubCommand (or GroupCommand)
-- [ ] Add GetAllCommands method and GetCommands<T> method
-  - [ ] Providing registered commands array
-  - [ ] Add "TryFindCommand" method
+- [X] Add GetAllCommands method and GetCommands<T> method
+  - [X] Providing registered commands array
+- [X] Events
+  - [X] CommandErrored
+  - [X] CommandExecuted
 - [ ] Support override method
+- [ ] Support SubCommand (or GroupCommand)
 
 ### Contact
 - Discord : 단비#1004

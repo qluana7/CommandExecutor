@@ -3,8 +3,10 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Threading.Tasks;
 using CommandExecutor.Attributes;
 using CommandExecutor.Converters;
+using CommandExecutor.EventArgs;
 using CommandExecutor.Exceptions;
 using CommandExecutor.Structures;
 
@@ -21,33 +23,104 @@ namespace CommandExecutor
         /// <summary>
         /// Initialize <see cref="Executor"/> object
         /// </summary>
-        public Executor()
-        {
-            this._commands = new List<CommandModule>();
-            this.Configuration = new ExecutorConfiguration();
-        }
+        public Executor() : this(new ExecutorConfiguration()) { }
         
         /// <summary>
         /// Initialize <see cref="Executor"/> object with <see cref="ExecutorConfiguration"/>
         /// </summary>
-        public Executor(ExecutorConfiguration configuration): this()
+        public Executor(ExecutorConfiguration configuration)
         {
+            this._commods = new List<CommandModule>();
+            this._commands = new List<string>();
+            configuration.ExceptionConfiguration._client = this;
             this.Configuration = configuration;
         }
         
-        private readonly List<CommandModule> _commands;
+        /// <summary>
+        /// The event raised on error when command execute
+        /// </summary>
+        public event EventHandler<CommandExceptionEventArgs> CommandErrored;
         
         /// <summary>
-        /// Can modify configuration with this
+        /// The event raised before method invoke.
+        /// It raises after all checking execute.
+        /// </summary>
+        public event EventHandler<CommandEventArgs> CommandExecuted;
+        
+        internal bool IsEventNull() => CommandErrored == null;
+        
+        internal void RaiseCommandErrored(CommandExceptionEventArgs e) => CommandErrored?.Invoke(e.InnerCommand, e);
+        
+        internal void RaiseCommandExecuted(CommandEventArgs e) => CommandExecuted?.Invoke(e.Command, e);
+        
+        private readonly List<CommandModule> _commods;
+        
+        private readonly List<string> _commands;
+        
+        /// <summary>
+        /// Can modify configuration
         /// </summary>
         public ExecutorConfiguration Configuration { get; set; }
         
         /// <summary>
-        /// Get commands that registered in this executor
+        /// Get commands that registered in executor
         /// </summary>
-        public CommandModule[] Commands => _commands.ToArray();
+        public CommandModule[] CommandModules => _commods.ToArray();
+        
+        /// <summary>
+        /// The command name array that registered in executor
+        /// </summary>
+        public string[] Commands => _commands.ToArray();
         
         private const BindingFlags FLAGS = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance;
+        
+        /// <summary>
+        /// <see cref="GetAllCommands"/> <see langword="async"/> version.
+        /// </summary>
+        /// <returns></returns>
+        public async Task<Command[]> GetAllCommandsAsync() =>
+            await Task.Run(GetAllCommands);
+        
+        /// <summary>
+        /// Return all Command object array that registered in executor
+        /// </summary>
+        /// <returns>Command array that registered</returns>
+        public Command[] GetAllCommands()
+        {
+            Command[] cmds = new Command[_commands.Count];
+            
+            for (int i = 0; i < _commands.Count; i++)
+                cmds[i] = FindCommand(_commands[i]);
+            
+            return cmds;
+        }
+        
+        /// <summary>
+        /// Get commands in specific class
+        /// </summary>
+        /// <typeparam name="T">The class that contains commands</typeparam>
+        public Command[] GetCommands<T>() where T : CommandModule
+        {
+            var names = GetCommandsName(typeof(T)).ToArray();
+            
+            Command[] cmds = new Command[names.Length];
+            
+            for (int i = 0; i < cmds.Length; i++) {
+                cmds[i] = FindCommand(names[i]);
+            }
+            
+            return cmds;
+        }
+        
+        private IEnumerable<string> GetCommandsName(Type t) =>
+            t.GetMethods(Configuration.IncludeStaticMethod ? FLAGS | BindingFlags.Static : FLAGS)
+                .Select(l => (l, l.GetCustomAttribute<CommandAttribute>()))
+                .Where(l => l.Item2 != null)
+                .SelectMany(l =>
+                    new string[] { string.IsNullOrWhiteSpace(l.Item2.Name) ? l.l.Name : l.Item2.Name }
+                        .Concat(l.Item2.Alias ?? Array.Empty<string>()
+                )
+            );
         
         /// <summary>
         /// Register commands.
@@ -60,7 +133,7 @@ namespace CommandExecutor
         /// <exception cref="RegisterException"/>
         public void RegisterCommands<T>() where T : CommandModule, new()
         {
-            IEnumerable<string> regcmd = this._commands.SelectMany(l => GetCommandsName(l.GetType()));
+            IEnumerable<string> regcmd = this._commods.SelectMany(l => GetCommandsName(l.GetType()));
             
             IEnumerable<string> cmd = GetCommandsName(typeof(T));
             
@@ -69,29 +142,27 @@ namespace CommandExecutor
             
             if (regcmd.Any(l => cmd.Contains(l)))
                 throw new RegisterException(typeof(T), "Methods with duplicate names cannot be registered.");
+
+            _commands.AddRange(cmd);
             
-            this._commands.Add(new T());
-            
-            IEnumerable<string> GetCommandsName(Type t) =>
-                t.GetMethods(Configuration.IncludeStaticMethod ? FLAGS | BindingFlags.Static : FLAGS)
-                    .Select(l => (l, l.GetCustomAttribute<CommandAttribute>()))
-                    .Where(l => l.Item2 != null)
-                    .SelectMany(l =>
-                        new string[] { string.IsNullOrWhiteSpace(l.Item2.Name) ? l.l.Name : l.Item2.Name }
-                            .Concat(l.Item2.Alias ?? Array.Empty<string>())
-                    );
+            this._commods.Add(new T());
         }
         
         /// <summary>
         /// Unregister commands.
         /// </summary>
-        /// <exception cref="NullReferenceException"/>
+        /// <exception cref="RegisterException"/>
         /// <typeparam name="T">The class to unregister. It must inherit <see cref="CommandModule"/></typeparam>
         public void UnregisterCommands<T>() where T : CommandModule, new()
         {
-            CommandModule mod = this._commands.FirstOrDefault(l => l is T);
-            if (mod == null) throw new NullReferenceException("There's no registered class matching with give class");
-            this._commands.Remove(mod);
+            CommandModule mod = this._commods.FirstOrDefault(l => l is T);
+            if (mod == null) throw new RegisterException(null, "There's no registered class matching with give class");
+            this._commods.Remove(mod);
+            
+            var cmds = GetCommandsName(typeof(T)).ToArray();
+            for (int i = 0; i < cmds.Length; i++)
+                if (_commands.Contains(cmds[i]))
+                    _commands.Remove(cmds[i]);
         }
         
         /// <summary>
@@ -148,11 +219,11 @@ namespace CommandExecutor
             MethodInfo method = null;
             CommandModule module = null;
             
-            for (int i = 0; i < _commands.Count; i++)
+            for (int i = 0; i < _commods.Count; i++)
             {
                 bool igncase = Configuration.IgnoreCase;
                 
-                IEnumerable<MethodInfo> infos = _commands[i]
+                IEnumerable<MethodInfo> infos = _commods[i]
                             .GetType().GetMethods(FLAGS)
                             .Where(l => l.GetCustomAttributes().FirstOrDefault(l => l is CommandAttribute) != null);
                 
@@ -170,7 +241,7 @@ namespace CommandExecutor
                 if (info == null) continue;
                 
                 method = info;
-                module = _commands[i];
+                module = _commods[i];
                 
                 break;
             }

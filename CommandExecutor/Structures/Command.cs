@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Reflection;
 using CommandExecutor.Attributes;
+using CommandExecutor.EventArgs;
 using CommandExecutor.Exceptions;
 
 namespace CommandExecutor.Structures
@@ -57,13 +58,11 @@ namespace CommandExecutor.Structures
         /// <summary>
         /// The converted objects.
         /// </summary>
-        /// <value></value>
         public object[] Arguments { get; private set; } = null;
         
         /// <summary>
         /// The raw string passed.
         /// </summary>
-        /// <value></value>
         public string RawArguments { get; private set; } = null;
         
         private bool isExeuting;
@@ -94,6 +93,7 @@ namespace CommandExecutor.Structures
                 if (!c.Check(this))
                     throw new CommandCheckFailException(this, $"Check returns false in {c.GetType().Name}");
             
+            Client.RaiseCommandExecuted(new CommandEventArgs(this));
             _command.Invoke(ModuleClass, param);
             
             ModuleClass.AfterExecute();
@@ -107,10 +107,36 @@ namespace CommandExecutor.Structures
         /// <param name="param">The string for method parameter. parameter will split with space.</param>
         public void Execute(string param)
         {
-            RawArguments = param;
-            object[] arg = Client.ConvertParameter(_command, param?.Split(' '));
-            Arguments = arg;
-            Execute(arg);
+            try
+            {
+                RawArguments = param;
+                object[] arg = Client.ConvertParameter(_command, param?.Split(' '));
+                Arguments = arg;
+                Execute(arg);
+            }
+            catch (Exception e)
+            {
+                if (!Client.Configuration.ExceptionConfiguration.TryGet(e.GetType(), out var conf))
+                    conf = Client.Configuration.ExceptionConfiguration.DefaultType;
+                var exc = new CommandExceptionEventArgs(this, e);
+                
+                if (conf.HasFlag(CommandThrowType.Event_or_Exception))
+                {
+                    if (!Client.IsEventNull())
+                        Client.RaiseCommandErrored(exc);
+                    else
+                        throw;
+                }
+                else if (conf.HasFlag(CommandThrowType.Event) || conf.HasFlag(CommandThrowType.Exception))
+                {
+                    if (conf.HasFlag(CommandThrowType.Event))
+                        Client.RaiseCommandErrored(exc);
+                    
+                    if (conf.HasFlag(CommandThrowType.Exception))
+                        throw;
+                }
+                else throw;
+            }
         }
     }
 }

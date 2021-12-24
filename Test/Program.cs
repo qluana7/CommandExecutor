@@ -5,6 +5,8 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using CommandExecutor;
 using CommandExecutor.Attributes;
+using CommandExecutor.EventArgs;
+using CommandExecutor.Exceptions;
 using CommandExecutor.Structures;
 
 namespace Test
@@ -29,12 +31,23 @@ namespace Test
         
         void Run()
         {
+            ExceptionManager manager = ExceptionManager.Default;
+            
+            manager.DefaultType = CommandThrowType.Event;
+            
+            manager.Set<CommandCheckFailException>(CommandThrowType.Event);
+            manager.Set<ExecuteException>(CommandThrowType.Event);
+            
             Executor = new(new ExecutorConfiguration() {
                 IgnoreCase = true,
                 IgnoreExtraArguments = false,
                 GetPrivateMethod = true,
-                IncludeStaticMethod = true
+                IncludeStaticMethod = true,
+                ExceptionConfiguration = manager
             });
+            
+            Executor.CommandErrored += CommandErrored;
+            Executor.CommandExecuted += CommandExecuted;
             
             Executor.RegisterCommands<ScopeCommands>();
             
@@ -54,6 +67,18 @@ namespace Test
             
             Executor.Execute("non");
             Executor.Execute("false");
+            
+            Executor.Execute("exception");
+        }
+        
+        public void CommandErrored(object sender, CommandExceptionEventArgs e)
+        {
+            Console.WriteLine($"{e.InnerException.GetType()} : {e.InnerCommand.Name} failed!");
+        }
+        
+        public void CommandExecuted(object sender, CommandEventArgs e)
+        {
+            Console.Write($"{e.Command.Name} : ");
         }
     }
     
@@ -91,6 +116,12 @@ namespace Test
         public void False()
         {
             Console.WriteLine("BUG");
+        }
+        
+        [Command]
+        public void Exception()
+        {
+            throw new InvalidOperationException();
         }
     }
     
