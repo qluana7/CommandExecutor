@@ -62,7 +62,7 @@ Then, it execute 'Hello' method with arguments "World"
 
 ### Contact
 - Discord : 단비#1004
-- Gmail : emailluana@gmail.com
+- Gmail : emailluana7@gmail.com
 
 ### Compile Information
 Framework version : Standard 2.1 / .NET 5.0
